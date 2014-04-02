@@ -17,3 +17,6 @@ When you have registered your application, you will get a consumer key and secre
 
 $wgWeiboOAuthKey = 'your key';
 $wgWeiboOAuthSecret = 'your secret';
+
+Then in order to enable this source , just add these to your LocalSettings.php file .
+$wgEnabledOAuthLoginList = array('weibo');
