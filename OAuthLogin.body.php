@@ -14,7 +14,8 @@ class OAuthLoginUI {
 					if(!in_array($ol, $wgOauthSourceList) ){
 						continue;
 					}
-					$url = SpecialPage::getTitleFor( 'OauthLogin', 'redirect' )->getLinkUrl( array('source'=>strtolower($ol)) );
+					$returnTo = isset($_GET['returnto']) ? $_GET['returnto'] : '';
+					$url = SpecialPage::getTitleFor( 'OauthLogin', 'redirect' )->getLinkUrl( array('source'=>strtolower($ol), 'returnto'=>$returnTo) );
 					$imgUrl = $wgExtensionAssetsPath . '/OAuthLogin/images/' . $ol . '-login.png';
 					$link .= '<a href="'.$url.'"><img src="'.$imgUrl.'" /></a>';
 				}

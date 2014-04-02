@@ -62,5 +62,5 @@ function efSetupOAuthLoginSchema( $updater ) {
 $olb = new OAuthLoginUI;
 $wgHooks['BeforePageDisplay'][] = array( $olb, 'efAddLoginButton' );
 
-$sol = new SpecialOAuthLogin;
-$wgHooks['UserLogoutComplete'][] = array($sol,'efOAuthLogout');
+// $sol = new SpecialOAuthLogin;
+// $wgHooks['UserLogoutComplete'][] = array($sol,'efOAuthLogout');

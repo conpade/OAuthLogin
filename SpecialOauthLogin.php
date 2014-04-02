@@ -14,7 +14,9 @@ class SpecialOAuthLogin extends SpecialPage {
 
 	// default method being called by a specialpage
 	public function execute( $parameter ){
-
+		if (session_id() == '') {
+			wfSetupSession();
+		}
 		$this->setHeaders();
 
 		switch($parameter){
@@ -47,6 +49,8 @@ class SpecialOAuthLogin extends SpecialPage {
 		if($this->getUser()->isLoggedIn())
 			return ;
 		// set return to
+		$_SESSION['returnTo'] = $_GET['returnto'];
+
 		$source = $this->helper->getSource();
 		$oauth = $this->helper->getOAuthObj($source);
 		$redirectUrl = $oauth->getRedirectUrl();
@@ -85,7 +89,10 @@ class SpecialOAuthLogin extends SpecialPage {
 			// check user name
 			$user = $this->_generateNewUser($oauthUser->userName);
 			// register
-			$this->_register($user, $oauthUser);
+			if(!$this->_register($user, $oauthUser)){
+				echo 'register err';die();
+			}
+				
 		}
 		// login
 		$this->_login($user);
@@ -94,11 +101,10 @@ class SpecialOAuthLogin extends SpecialPage {
 	}
 
 	private function _isUserNameExisted($name){
-    	$user = User::newFromName( $name );
-		if( $user->getId() == 0 )
-			return false;
-		else 
+		if( User::isCreatableName( $name ) )
 			return true;
+		else 
+			return false;
     }
 
     private function _generateNewUser($name, $first = true){
@@ -106,7 +112,7 @@ class SpecialOAuthLogin extends SpecialPage {
     		$suffix = '';
     	}
     	else{
-    		$suffix = '_' . rand(1000,9999);
+    		$suffix = rand(1000,9999);
     	}
     	$newName = $name . $suffix;
     	if($this->_isUserNameExisted($newName))
@@ -115,17 +121,13 @@ class SpecialOAuthLogin extends SpecialPage {
 			return User::newFromName( $newName );
     }
 
-	private function _register(&$user, &$oauthUser){
+	private function _register($user, $oauthUser){
 		// todo add transaction
 		global $wgAuth;
 
 		try {
 			$user->addToDatabase();
-			// $user->setRealName($name);
-
-			if ( $wgAuth->allowPasswordChange() )
-				$user->setPassword(User::randomPassword());
-
+			$user->setPassword(User::randomPassword());
 			$user->addGroup('oauth');
 			//$user->confirmEmail();
 			$user->setToken();
@@ -136,11 +138,9 @@ class SpecialOAuthLogin extends SpecialPage {
 
 			$oauthUser->userId = $user->getId();
 			$oauthUser->save();
-			
-			return true;
+			return $user;
 
 		} catch( Exception $e ) {
-			print( $e->getTraceAsString() );
 			return false;
 		}
 	}
@@ -170,11 +170,15 @@ class SpecialOAuthLogin extends SpecialPage {
 		global $wgRedirectOnLogin, $wgSecureLogin;
 		$loginForm = $this->loginForm;
 
-		if(1){  // todo if current page is logout , redir to main
+		if( empty($_SESSION['returnTo']) ){  // if return to is empty , reload
 			$returnScript = 'window.opener.location.reload();';
 		}
 		else{
-			$returnToTitle = Title::newMainPage();
+			$returnTo = $_SESSION['returnTo'];
+			$returnToTitle = Title::newFromText( $returnTo );
+			if ( !$returnToTitle ) {
+				$returnToTitle = Title::newMainPage();
+			}
 
 			if ( $wgSecureLogin && !$loginForm->mStickHTTPS ) {
 				$options = array( 'http' );
@@ -187,21 +191,12 @@ class SpecialOAuthLogin extends SpecialPage {
 				$proto = PROTO_RELATIVE;
 			}
 
-			$redirectUrl = $returnToTitle->getFullURL( array(), false, $proto );
-			$returnScript = 'window.opener.location='.$redirectUrl.';';
+			$redirectUrl = $returnToTitle->getLinkURL( array(), false );
+			$returnScript = 'window.opener.location="'.$redirectUrl.'";';
 		}
-		
 		$closeScript = 'window.close();';
 		$html = '<script type="text/javascript">' . $returnScript . $closeScript . '</script>';
 		echo $html;
 	}
 
-	public function efOAuthLogout(){
-		if (session_id() == '') {
-			session_start();
-		}
-		session_destroy();
-		return true;
-	}
-	
 }
