@@ -6,6 +6,6 @@ $aliases = array();
  * @author David Raison
  */
 $aliases['en'] = array(
-        'TwitterLogin' => array('TwitterLogin')
+        'OAuthLogin' => array('OAuthLogin')
 );
 
