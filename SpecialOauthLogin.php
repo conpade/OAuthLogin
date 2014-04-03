@@ -9,14 +9,13 @@ class SpecialOAuthLogin extends SpecialPage {
 
 	public function __construct(){
 		parent::__construct('OAuthLogin');
-		$this->helper = new OAuthHelper; 
+		$this->helper = new OAuthHelper($this); 
 	}
 
 	// default method being called by a specialpage
 	public function execute( $parameter ){
-		if (session_id() == '') {
-			wfSetupSession();
-		}
+		$this->helper->setupSession();
+
 		$this->setHeaders();
 
 		switch($parameter){
@@ -32,22 +31,26 @@ class SpecialOAuthLogin extends SpecialPage {
 		}
 	}
 
+	// info page
 	private function _default(){
 		global $wgOut;
 
-		$wgOut->setPagetitle("OAuth Login");
+		$wgOut->setPagetitle("OAuthLogin");
 
 		if ( $this->getUser()->isLoggedIn() ) {
-			$wgOut->addWikiMsg( 'OAuth-notloggedin' );
+			$wgOut->addWikiMsg( 'You are already logged in.' );
 		} else {
-			$wgOut->addWikiMsg( 'OAuth-alreadyloggedin' );
+			$wgOut->addWikiMsg( 'You are not logged in.' );
 		}
 		return true;
 	}
 
+	// redirect to source platform's login page
 	private function _redirect(){
-		if($this->getUser()->isLoggedIn())
+		// do not allow login when user is already logged in
+		if($this->helper->isUserLoggedIn())
 			return ;
+
 		// set return to
 		$_SESSION['returnTo'] = $_GET['returnto'];
 
@@ -57,12 +60,15 @@ class SpecialOAuthLogin extends SpecialPage {
 		header("Location: $redirectUrl",true ,302);
 	}
 
-
+	// handler callback
 	private function _handleCallback(){
-		if($this->getUser()->isLoggedIn())
+		// do not allow login when user is already logged in
+		if($this->helper->isUserLoggedIn())
 			return ;
+
 		$source = $this->helper->getSource();
-		// todo anti-csrf (only qq)
+
+		// anti-csrf (only qq) <need mod>
 		if($source == 'qq'){
 			$state = $_GET['state'];
 			if($_SESSION['state'] != $state){
@@ -75,12 +81,15 @@ class SpecialOAuthLogin extends SpecialPage {
 			throw new OAuthException('Empty code');
 		}
 
+		// do oauth
 		$oauth = $this->helper->getOAuthObj($source);
 		$oauth->handlerCallBack($authCode);
+
+		// get third party user's data
 		$oauthUserData = $oauth->getUserData();
 		$oauthUser = new OAuthUserModel($oauthUserData);
 
-		// Is user Existed
+		// is user Existed
 		if ($oauthUser->isExist()){
 			$oauthUser->loadByOpenId();
 			$user = User::newFromId($oauthUser->userId);
@@ -90,13 +99,11 @@ class SpecialOAuthLogin extends SpecialPage {
 			$user = $this->_generateNewUser($oauthUser->userName);
 			// register
 			if(!$this->_register($user, $oauthUser)){
-				echo 'register err';die();
+				throw new OAuthException('Register error');
 			}
-				
 		}
 		// login
 		$this->_login($user);
-		// close & refresh
 		$this->_loginSuccess();
 	}
 
@@ -107,6 +114,10 @@ class SpecialOAuthLogin extends SpecialPage {
 			return false;
     }
 
+    /**
+     * automaticly generate user 
+     * I am not sure QQ or Weibo's username is valid in mw
+     */
     private function _generateNewUser($name, $first = true){
     	if($first){
     		$suffix = '';
@@ -122,12 +133,13 @@ class SpecialOAuthLogin extends SpecialPage {
     }
 
 	private function _register($user, $oauthUser){
-		// todo add transaction
 		global $wgAuth;
 
 		try {
+			// todo add transaction
 			$user->addToDatabase();
 			$user->setPassword(User::randomPassword());
+			// I do not know group's function
 			$user->addGroup('oauth');
 			//$user->confirmEmail();
 			$user->setToken();
