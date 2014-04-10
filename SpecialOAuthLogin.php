@@ -193,9 +193,12 @@ class SpecialOAuthLogin extends SpecialPage {
 		echo $html;
 	}
 
+<<<<<<< HEAD:SpecialOauthLogin.php
 	private function _registerForm(){
 		$form = new RegisterForm();
 
 		$form->execute();
 	}
+=======
+>>>>>>> 63407206e622ba65fedb0eea27d4452e5c985eb1:SpecialOAuthLogin.php
 }
