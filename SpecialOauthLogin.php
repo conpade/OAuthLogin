@@ -18,17 +18,23 @@ class SpecialOAuthLogin extends SpecialPage {
 
 		$this->setHeaders();
 
-		switch($parameter){
-			case 'redirect':
-				$this->_redirect();
-			break;
-			case 'callback':
-				$this->_handleCallback();
-			break;
-			default:
-				$this->_default();
-			break;
+		try{
+			switch($parameter){
+				case 'redirect':
+					$this->_redirect();
+				break;
+				case 'callback':
+					$this->_handleCallback();
+				break;
+				default:
+					$this->_default();
+				break;
+			}
+		} catch(OAuthException $e) {
+			echo $e->getMessage();
+			die();
 		}
+		
 	}
 
 	// info page
@@ -85,58 +91,33 @@ class SpecialOAuthLogin extends SpecialPage {
 		$oauth = $this->helper->getOAuthObj($source);
 		$oauth->handlerCallBack($authCode);
 
-		// get third party user's data
+		// get third-party-user's data
 		$oauthUserData = $oauth->getUserData();
+		
 		$oauthUser = new OAuthUserModel($oauthUserData);
 
 		// is user Existed
 		if ($oauthUser->isExist()){
 			$oauthUser->loadByOpenId();
 			$user = User::newFromId($oauthUser->userId);
-		}
-		else {
-			// check user name
-			$user = $this->_generateNewUser($oauthUser->userName);
+		} else {
+			// create new user
+			$user = $this->helper->generateNewUser($oauthUser->userName);
+
+			if($user === false){
+				return $this->_registerForm();
+			} 
 			// register
-			if(!$this->_register($user, $oauthUser)){
-				throw new OAuthException('Register error');
-			}
+			$this->_register($user, $oauthUser);
 		}
 		// login
 		$this->_login($user);
 		$this->_loginSuccess();
 	}
 
-	private function _isUserNameExisted($name){
-		if( User::isCreatableName( $name ) )
-			return true;
-		else 
-			return false;
-    }
-
-    /**
-     * automaticly generate user 
-     * I am not sure QQ or Weibo's username is valid in mw
-     */
-    private function _generateNewUser($name, $first = true){
-    	if($first){
-    		$suffix = '';
-    	}
-    	else{
-    		$suffix = rand(1000,9999);
-    	}
-    	$newName = $name . $suffix;
-    	if($this->_isUserNameExisted($newName))
-			return $this->_generateNewUser($name, false);
-		else
-			return User::newFromName( $newName );
-    }
-
 	private function _register($user, $oauthUser){
-		global $wgAuth;
-
 		try {
-			// todo add transaction
+			// need to add transaction?
 			$user->addToDatabase();
 			$user->setPassword(User::randomPassword());
 			// I do not know group's function
@@ -152,8 +133,9 @@ class SpecialOAuthLogin extends SpecialPage {
 			$oauthUser->save();
 			return $user;
 
-		} catch( Exception $e ) {
-			return false;
+		} catch(OAuthException $e) {
+			// need to roll back?
+			throw new OAuthException('location:' . __method__ . '\n' . $e->getMessage()); 
 		}
 	}
 
@@ -211,4 +193,9 @@ class SpecialOAuthLogin extends SpecialPage {
 		echo $html;
 	}
 
+	private function _registerForm(){
+		$form = new RegisterForm();
+
+		$form->execute();
+	}
 }

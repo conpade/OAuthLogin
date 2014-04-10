@@ -38,6 +38,7 @@ $wgAutoloadClasses['WeiboLogin'] = dirname(__FILE__) . '/include/WeiboLogin.php'
 $wgAutoloadClasses['OAuthUserModel'] = dirname(__FILE__) . '/include/OAuthUserModel.php';
 
 $wgAutoloadClasses['OAuthHelper'] = dirname(__FILE__) . '/include/OAuthHelper.php';
+$wgAutoloadClasses['RegisterForm'] = dirname(__FILE__) . '/include/RegisterForm.php';
 $wgAutoloadClasses['SpecialOAuthLogin'] = dirname(__FILE__) . '/SpecialOAuthLogin.php';
 $wgAutoloadClasses['OAuthLoginUI'] = dirname(__FILE__) . '/OAuthLogin.body.php';
 
