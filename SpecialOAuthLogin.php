@@ -15,20 +15,19 @@ class SpecialOAuthLogin extends SpecialPage {
 	// default method being called by a specialpage
 	public function execute( $parameter ){
 		$this->helper->setupSession();
-
-		$this->setHeaders();
-
 		try{
 			switch($parameter){
 				case 'redirect':
 					$this->_redirect();
-				break;
+					break;
 				case 'callback':
 					$this->_handleCallback();
-				break;
+					break;
+				case 'register':
+					$this->_register();
+					break;
 				default:
 					$this->_default();
-				break;
 			}
 		} catch(OAuthException $e) {
 			echo $e->getMessage();
@@ -40,6 +39,7 @@ class SpecialOAuthLogin extends SpecialPage {
 	// info page
 	private function _default(){
 		global $wgOut;
+		$this->setHeaders();
 
 		$wgOut->setPagetitle("OAuthLogin");
 
@@ -55,7 +55,7 @@ class SpecialOAuthLogin extends SpecialPage {
 	private function _redirect(){
 		// do not allow login when user is already logged in
 		if($this->helper->isUserLoggedIn())
-			return ;
+			return false;
 
 		// set return to
 		$_SESSION['returnTo'] = $_GET['returnto'];
@@ -70,7 +70,7 @@ class SpecialOAuthLogin extends SpecialPage {
 	private function _handleCallback(){
 		// do not allow login when user is already logged in
 		if($this->helper->isUserLoggedIn())
-			return ;
+			return false;
 
 		$source = $this->helper->getSource();
 
@@ -105,17 +105,22 @@ class SpecialOAuthLogin extends SpecialPage {
 			$user = $this->helper->generateNewUser($oauthUser->userName);
 
 			if($user === false){
-				return $this->_registerForm();
+				$_SESSION['oauthUser'] = array(
+					'openId' => $oauthUser->openId,
+					'source' => $oauthUser->source,
+				);
+				$url = SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl( array('userName'=>$oauthUser->userName) );
+				header("Location: $url",true ,302);
 			} 
 			// register
-			$this->_register($user, $oauthUser);
+			$this->_processRegister($user, $oauthUser);
 		}
 		// login
 		$this->_login($user);
 		$this->_loginSuccess();
 	}
 
-	private function _register($user, $oauthUser){
+	private function _processRegister($user, $oauthUser){
 		try {
 			// need to add transaction?
 			$user->addToDatabase();
@@ -193,12 +198,35 @@ class SpecialOAuthLogin extends SpecialPage {
 		echo $html;
 	}
 
-<<<<<<< HEAD:SpecialOauthLogin.php
-	private function _registerForm(){
-		$form = new RegisterForm();
+	private function _register(){
+		if(empty($_SESSION['oauthUser'])){
+			$returnToTitle = Title::newMainPage();
+			$redirectUrl = $returnToTitle->getLinkURL( array(), false );
+			header("Location: $redirectUrl",true ,302);
+		}
 
-		$form->execute();
+		$userName = (!empty($_REQUEST['userName']) ? $_REQUEST['userName'] : '');
+		if(!empty($userName)){
+			$oauthUserData = $_SESSION['oauthUser'];
+			$oauthUserData['name'] = $userName;
+			$oauthUser = new OAuthUserModel($oauthUserData);
+			$user = $this->helper->generateNewUser($oauthUser->userName);
+			if($user != false){
+				unset($_SESSION['oauthUser']);
+				// register
+				$this->_processRegister($user, $oauthUser);
+				// login
+				$this->_login($user);
+				$this->_loginSuccess();
+				return true;
+			}
+		}
+
+		global $wgOut;
+		require('OAuthUserRegisterTemplate.php');
+		$wgOut->setPagetitle("OAuthUser Register");
+		$template = new OAuthUserRegisterTemplate;
+		$template->set( 'userName', $oauthUser->userName );
+		$wgOut->addTemplate( $template );
 	}
-=======
->>>>>>> 63407206e622ba65fedb0eea27d4452e5c985eb1:SpecialOAuthLogin.php
 }

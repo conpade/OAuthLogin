@@ -49,6 +49,7 @@ $wgExtensionAliasFiles['OAuthLogin'] = dirname(__FILE__) .'/OAuthLogin.alias.php
 $wgSpecialPages['OAuthLogin'] = 'SpecialOAuthLogin';
 $wgSpecialPageGroups['OAuthLogin'] = 'login';
 
+
 define('OAUTH_USER_TABLE', 'oauth_user');
 // update schema
 $wgHooks['LoadExtensionSchemaUpdates'][] = 'efSetupOAuthLoginSchema';
