@@ -5,8 +5,11 @@ class WeiboLogin extends OAuthBase
 	{
 		global $wgWeiboOAuthKey, $wgWeiboOAuthSecret, $wgServer;
 		parent::__construct($wgWeiboOAuthKey, $wgWeiboOAuthSecret);
+
+		$redirUrl = strpos($wgServer, '//') === 0 ? 'http:' . $wgServer : $wgServer;
+		$redirUrl .= SpecialPage::getTitleFor( 'OauthLogin', 'callback' )->getLinkUrl( array('source'=>'weibo'));
 		
-		$this->setConfig('redirUrl', $wgServer . SpecialPage::getTitleFor( 'OauthLogin', 'callback' )->getLinkUrl( array('source'=>'weibo')) );
+		$this->setConfig('redirUrl', $redirUrl);
 		$this->setConfig('serverName', 'api.weibo.com');
 		
 		$this->setApiDirs('getCode', '/oauth2/authorize');
