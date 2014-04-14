@@ -29,9 +29,6 @@ $wgExtensionCredits['specialpage'][] = array(
 
 $wgOauthSourceList = array('weibo','qq');
 
-// Create a twiter group
-$wgGroupPermissions['oauth'] = $wgGroupPermissions['user'];
-
 $wgAutoloadClasses['Net'] = dirname(__FILE__) . '/include/Net.php';
 $wgAutoloadClasses['OAuthBase'] = dirname(__FILE__) . '/include/OAuthBase.php';
 $wgAutoloadClasses['WeiboLogin'] = dirname(__FILE__) . '/include/WeiboLogin.php';
@@ -63,6 +60,3 @@ function efSetupOAuthLoginSchema( $updater ) {
 // hooks
 $olb = new OAuthLoginUI;
 $wgHooks['BeforePageDisplay'][] = array( $olb, 'efAddLoginButton' );
-
-// $sol = new SpecialOAuthLogin;
-// $wgHooks['UserLogoutComplete'][] = array($sol,'efOAuthLogout');

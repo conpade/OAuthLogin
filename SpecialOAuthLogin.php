@@ -126,7 +126,7 @@ class SpecialOAuthLogin extends SpecialPage {
 			$user->addToDatabase();
 			$user->setPassword(User::randomPassword());
 			// I do not know group's function
-			$user->addGroup('oauth');
+			// $user->addGroup('oauth');
 			//$user->confirmEmail();
 			$user->setToken();
 			$user->saveSettings();
@@ -195,6 +195,7 @@ class SpecialOAuthLogin extends SpecialPage {
 		}
 		$closeScript = 'window.close();';
 		$html = '<script type="text/javascript">' . $returnScript . $closeScript . '</script>';
+		// header("Content-type: text/html; charset=utf-8"); 
 		echo $html;
 	}
 
