@@ -70,4 +70,14 @@ class OAuthHelper{
 			return false;
 	}
 
+	public function createRandomString($len)
+	{
+		$str = '';
+		for ($i = 0; $i < $len; $i++)
+		{
+			$str .= chr(mt_rand(33, 126));
+		}
+		return $str;
+	}
+
 }

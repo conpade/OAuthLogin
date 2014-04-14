@@ -32,6 +32,7 @@ $wgOauthSourceList = array('weibo','qq');
 $wgAutoloadClasses['Net'] = dirname(__FILE__) . '/include/Net.php';
 $wgAutoloadClasses['OAuthBase'] = dirname(__FILE__) . '/include/OAuthBase.php';
 $wgAutoloadClasses['WeiboLogin'] = dirname(__FILE__) . '/include/WeiboLogin.php';
+$wgAutoloadClasses['QqLogin'] = dirname(__FILE__) . '/include/QqLogin.php';
 $wgAutoloadClasses['OAuthUserModel'] = dirname(__FILE__) . '/include/OAuthUserModel.php';
 
 $wgAutoloadClasses['OAuthHelper'] = dirname(__FILE__) . '/include/OAuthHelper.php';
