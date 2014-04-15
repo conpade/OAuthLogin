@@ -15,12 +15,12 @@ class QqLogin extends OAuthBase
 		$this->setApiDirs('getCode', '/oauth2.0/authorize');
 		$this->setApiDirs('getToken', '/oauth2.0/token');
 		$this->setApiDirs('getTokenInfo', '/oauth2.0/me');
-		$this->setApiDirs('getUserInfo', '/v3/user/get_info');
+		$this->setApiDirs('getUserInfo', '/user/get_user_info');
 	}
 
 	public function getRedirectUrl()
 	{
-		$params = array('client_id' => $this->getConfig('appId'),'response_type'=>'code','redirect_uri'=>$this->getConfig('redirUrl'));
+		$params = array('client_id' => $this->getConfig('appId'),'response_type'=>'code','redirect_uri'=>$this->getConfig('redirUrl'),'state'=>$this->getState());
 		$url = Net::makeUrl($params, $this->getConfig('serverName'), $this->getApiDirs('getCode'), 'https');
 		return $url;
 	}
@@ -32,7 +32,13 @@ class QqLogin extends OAuthBase
 		$ret = Net::makeRequest($this->getApiUri('getToken'), $params, array(), 'post', 'https');
 		if (true === $ret['result'])
 		{
-			$msg = json_decode($ret['msg'], true);
+			$msgArr = explode('&',$ret['msg']);
+			$msg = array();
+			foreach($msgArr as $value)
+			{
+				$data = explode('=',$value);
+				$msg[$data[0]] = $data[1];
+			}
 			if (isset($msg['access_token']))
 			{
 				$this->setData('token', $msg['access_token']);
@@ -57,10 +63,15 @@ class QqLogin extends OAuthBase
 		$ret = Net::makeRequest($this->getApiUri('getTokenInfo'), $params, array(), 'post', 'https');
 		if (true === $ret['result'])
 		{
-			$msg = json_decode($ret['msg'], true);
-			if (isset($msg['uid']))
+			$msg = array();
+			if(!preg_match('/(?<=callback\().+(?=\);)/', $ret['msg'], $msg))
 			{
-				$this->setUser('openId', $msg['uid']);
+				throw new OauthException(__METHOD__.' invalid data');
+			}
+			$msg = json_decode($msg[0], true);
+			if (isset($msg['openid']))
+			{
+				$this->setUser('openId', $msg['openid']);
 				return true;
 			}
 			else
@@ -78,19 +89,21 @@ class QqLogin extends OAuthBase
 
 	public function getUserInfo()
 	{
-		$params = array('access_token' => $this->getData('token'), 'uid' => $this->getUser('openId'));
+		$params = array('access_token' => $this->getData('token'), 'oauth_consumer_key' => $this->getConfig('appId'), 'openid' => $this->getUser('openId'));
 		$ret = Net::makeRequest($this->getApiUri('getUserInfo'), $params, array(), 'get', 'https');
 		if (true === $ret['result'])
 		{
 			$msg = json_decode($ret['msg'], true);
-			if (isset($msg['name']))
+			var_dump($msg);
+			if (isset($msg['ret']) && $msg['ret']===0)
 			{
-				$this->setUser('name', $msg['name']);
+				$nickname = $msg['nickname'];
+				$this->setUser('name', $nickname);
 				return true;
 			}
 			else
 			{
-				$this->setErrMsg($msg);
+				$this->setErrMsg($msg['msg']);
 				throw new OauthException(__METHOD__.' invalid data');
 			}
 		}

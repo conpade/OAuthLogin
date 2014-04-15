@@ -60,16 +60,15 @@ class SpecialOAuthLogin extends SpecialPage {
 		// set return to
 		$_SESSION['returnTo'] = $_GET['returnto'];
 
-		// set state for qq
+		// set state
 		$_SESSION['state'] = md5(microtime(true) . $this->helper->createRandomString(8));
-
 		$source = $this->helper->getSource();
 		$oauth = $this->helper->getOAuthObj($source);
 		if($source == 'qq'){
-			$redirectUrl = $oauth->getRedirectUrl($_SESSION['state']);
-		} else {
-			$redirectUrl = $oauth->getRedirectUrl();
+			$oauth->setState($_SESSION['state']);
 		}
+		$redirectUrl = $oauth->getRedirectUrl();
+		
 		
 		header("Location: $redirectUrl",true ,302);
 	}
