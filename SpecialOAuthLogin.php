@@ -60,15 +60,13 @@ class SpecialOAuthLogin extends SpecialPage {
 		// set return to
 		$_SESSION['returnTo'] = $_GET['returnto'];
 
-		// set state
-		$_SESSION['state'] = md5(microtime(true) . $this->helper->createRandomString(8));
 		$source = $this->helper->getSource();
 		$oauth = $this->helper->getOAuthObj($source);
 		if($source == 'qq'){
+			$_SESSION['state'] = md5(microtime(true) . $this->helper->createRandomString(8));
 			$oauth->setState($_SESSION['state']);
 		}
 		$redirectUrl = $oauth->getRedirectUrl();
-		
 		
 		header("Location: $redirectUrl",true ,302);
 	}
@@ -84,7 +82,9 @@ class SpecialOAuthLogin extends SpecialPage {
 		// anti-csrf (only qq)
 		if($source == 'qq'){
 			$state = $_GET['state'];
-			if($_SESSION['state'] != $state){
+			$ourState = $_SESSION['state'];
+			unset($_SESSION['state']);
+			if($ourState !== $state){
 				throw new OAuthException('Csrf attack');
 			}
 		}
