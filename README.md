@@ -21,6 +21,7 @@ $wgWeiboOAuthSecret = 'your_secret';
 Then in order to enable this source , just add these to your LocalSettings.php file .
 $wgEnabledOAuthLoginList = array('weibo');
 
+// QQ login is not tested. It may have some problems.
 If you want to add QQ login. Add these to your LocalSettings.php file:
 $wgQqOAuthKey = 'your_key';
 $wgQqOAuthSecret = 'your_secret';
