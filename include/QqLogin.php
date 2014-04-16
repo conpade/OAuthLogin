@@ -94,7 +94,6 @@ class QqLogin extends OAuthBase
 		if (true === $ret['result'])
 		{
 			$msg = json_decode($ret['msg'], true);
-			var_dump($msg);
 			if (isset($msg['ret']) && $msg['ret']===0)
 			{
 				$nickname = $msg['nickname'];

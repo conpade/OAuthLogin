@@ -63,8 +63,9 @@ class SpecialOAuthLogin extends SpecialPage {
 		$source = $this->helper->getSource();
 		$oauth = $this->helper->getOAuthObj($source);
 		if($source == 'qq'){
-			$_SESSION['state'] = md5(microtime(true) . $this->helper->createRandomString(8));
-			$oauth->setState($_SESSION['state']);
+			$state = md5(microtime(true) . $this->helper->createRandomString(8));
+			$_SESSION['qqLoginState'] = $state;
+			$oauth->setState($state);
 		}
 		$redirectUrl = $oauth->getRedirectUrl();
 		
@@ -81,9 +82,9 @@ class SpecialOAuthLogin extends SpecialPage {
 
 		// anti-csrf (only qq)
 		if($source == 'qq'){
-			$state = $_GET['state'];
-			$ourState = $_SESSION['state'];
-			unset($_SESSION['state']);
+			$state = !empty($_GET['state']) ? $_GET['state'] : '';
+			$ourState = !empty($_SESSION['qqLoginState']) ? $_SESSION['qqLoginState'] : '';
+			unset($_SESSION['qqLoginState']);
 			if($ourState !== $state){
 				throw new OAuthException('Csrf attack');
 			}

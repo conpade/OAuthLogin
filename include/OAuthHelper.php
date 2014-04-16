@@ -45,13 +45,6 @@ class OAuthHelper{
 		}
 	}
 
-	/**
-	 * get state for csrf
-	 */
-	public function getState(){
-
-	}
-
 	public function isCreatableName($name){
 		if( User::isCreatableName( $name ) )
 			return true;
