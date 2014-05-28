@@ -45,22 +45,22 @@ class OAuthHelper{
 		}
 	}
 
-	public function isCreatableName($name){
-		if( User::isCreatableName( $name ) )
-			return true;
-		else 
-			return false;
-	}
-
 	/**
 	 * automaticly generate user 
-	 * I am not sure QQ or Weibo's username is valid in mw
 	 */
 	public function generateNewUser($name){
-		if($this->isCreatableName($name))
-			return User::newFromName( $name );
-		else
-			return false;
+		# Now create a dummy user ($u) and check if it is valid
+		$name = trim( $name );
+
+		$u = User::newFromName( $name, 'creatable' );
+
+		if ( $u === false ) {
+			return Status::newFatal( 'noname' );
+		} elseif ( 0 != $u->idForName() ) {
+			return Status::newFatal( 'userexists' );
+		}
+
+		return $u;
 	}
 
 	public function createRandomString($len)

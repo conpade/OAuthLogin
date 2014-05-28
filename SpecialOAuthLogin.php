@@ -104,6 +104,8 @@ class SpecialOAuthLogin extends SpecialPage {
 		
 		$oauthUser = new OAuthUserModel($oauthUserData);
 
+		
+
 		// is user Existed
 		if ($oauthUser->isExist()){
 			$oauthUser->loadByOpenId();
@@ -112,13 +114,13 @@ class SpecialOAuthLogin extends SpecialPage {
 			// create new user
 			$user = $this->helper->generateNewUser($oauthUser->userName);
 
-			if($user === false){
+			if($user === false || $user instanceof Status){
 				$_SESSION['oauthUser'] = array(
 					'openId' => $oauthUser->openId,
 					'source' => $oauthUser->source,
 				);
 				$url = SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl( array('userName'=>$oauthUser->userName) );
-				header("Location: $url",true ,302);
+				header("Location: $url", true, 302);
 			} 
 			// register
 			$this->_processRegister($user, $oauthUser);
@@ -220,7 +222,7 @@ class SpecialOAuthLogin extends SpecialPage {
 			$oauthUserData['name'] = $userName;
 			$oauthUser = new OAuthUserModel($oauthUserData);
 			$user = $this->helper->generateNewUser($oauthUser->userName);
-			if($user != false){
+			if($user != false && !$user instanceof Status){
 				unset($_SESSION['oauthUser']);
 				// register
 				$this->_processRegister($user, $oauthUser);
