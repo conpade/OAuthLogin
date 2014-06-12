@@ -12,7 +12,7 @@ class SpecialOAuthLogin extends SpecialPage {
 		$this->helper = new OAuthHelper($this); 
 	}
 
-	// default method being called by a specialpage
+	// default method called by a specialpage
 	public function execute( $parameter ){
 		$this->helper->setupSession();
 		try{
@@ -30,7 +30,7 @@ class SpecialOAuthLogin extends SpecialPage {
 					$this->_default();
 			}
 		} catch(OAuthException $e) {
-			echo $e->getMessage();
+			$this->helper->handlerException($e);
 			die();
 		}
 		
@@ -51,15 +51,15 @@ class SpecialOAuthLogin extends SpecialPage {
 		return true;
 	}
 
-	// redirect to source platform's login page
+	// redirect to third-party login page
 	private function _redirect(){
 		// do not allow login when user is already logged in
 		if($this->helper->isUserLoggedIn())
-			return false;
+			$this->helper->defaultRedirect();
 
 		// set return to
 		$_SESSION['returnTo'] = $_GET['returnto'];
-
+		throw new OAuthException('aa');
 		$source = $this->helper->getSource();
 		$oauth = $this->helper->getOAuthObj($source);
 		if($source == 'qq'){
@@ -76,7 +76,7 @@ class SpecialOAuthLogin extends SpecialPage {
 	private function _handleCallback(){
 		// do not allow login when user is already logged in
 		if($this->helper->isUserLoggedIn())
-			return false;
+			$this->helper->defaultRedirect();
 
 		$source = $this->helper->getSource();
 
@@ -200,7 +200,7 @@ class SpecialOAuthLogin extends SpecialPage {
 				$proto = PROTO_RELATIVE;
 			}
 
-			$redirectUrl = $returnToTitle->getLinkURL( array(), false );
+			$redirectUrl = $returnToTitle->getLinkURL( array(), false, $proto );
 			$returnScript = 'window.opener.location="'.$redirectUrl.'";';
 		}
 		$closeScript = 'window.close();';

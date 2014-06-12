@@ -73,4 +73,87 @@ class OAuthHelper{
 		return $str;
 	}
 
+	public function defaultRedirect()
+	{
+		$returnToTitle = Title::newMainPage();
+		$redirectUrl = $returnToTitle->getLinkURL( array(), false );
+		header("Location: $redirectUrl",true ,302);
+	}
+
+	public function handlerException($exception)
+	{
+		$errMsg = $exception->getMessage();
+		$redirectJs = $this->makeRedirectToReferJS();
+		$content = <<<CONTENT
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<title>登陆出错</title>
+</head>
+<body>
+	<div>$errMsg</div>
+	$redirectJs
+</body>
+</html>
+CONTENT;
+		echo $content;
+	}
+
+	public function makeRedirectToReferJS()
+	{
+		$returnTo = null;
+		if(!empty($_SESSION['returnTo'])){
+			$returnTo = $_SESSION['returnTo'];
+		}
+		$returnToUrl = $this->makeReturnToUrl($returnTo);
+		$content = <<<CONTENT
+<div id="timer"></div>
+<script type="text/javascript">
+/*<![CDATA[*/
+var time = 3;
+
+function redirect(){ 
+	window.opener.location = "$returnToUrl";
+	window.close();
+} 
+var leftTime = 0; 
+function countDown(){ 
+	document.all.timer.innerHTML = (time - leftTime) + "秒后跳转"; 
+	leftTime++;
+} 
+timer=setInterval('countDown()', 1000);
+timer=setTimeout('redirect()',time * 1000);
+
+/*]]>*/
+</script>
+CONTENT;
+		return $content;
+	}
+
+	public function makeReturnToUrl($returnTo = null)
+	{
+		global $wgSecureLogin;
+		if ( $wgSecureLogin && !$loginForm->mStickHTTPS ) {
+			$options = array( 'http' );
+			$proto = PROTO_HTTP;
+		} elseif ( $wgSecureLogin ) {
+			$options = array( 'https' );
+			$proto = PROTO_HTTPS;
+		} else {
+			$options = array();
+			$proto = PROTO_RELATIVE;
+		}
+		if( empty($returnTo) ){
+			$returnToTitle = Title::newMainPage();
+		} else {
+			$returnToTitle = Title::newFromText( $returnTo );
+			if ( !$returnToTitle ) {
+				$returnToTitle = Title::newMainPage();
+			}
+		}
+		$redirectUrl = $returnToTitle->getLinkURL( array(), false, $proto );
+		return $redirectUrl;
+	}
+
 }
