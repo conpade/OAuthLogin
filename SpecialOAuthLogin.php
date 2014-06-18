@@ -59,7 +59,6 @@ class SpecialOAuthLogin extends SpecialPage {
 
 		// set return to
 		$_SESSION['returnTo'] = $_GET['returnto'];
-		throw new OAuthException('aa');
 		$source = $this->helper->getSource();
 		$oauth = $this->helper->getOAuthObj($source);
 		if($source == 'qq'){
@@ -101,7 +100,7 @@ class SpecialOAuthLogin extends SpecialPage {
 
 		// get third-party-user's data
 		$oauthUserData = $oauth->getUserData();
-		
+
 		$oauthUser = new OAuthUserModel($oauthUserData);
 
 		
@@ -110,6 +109,19 @@ class SpecialOAuthLogin extends SpecialPage {
 		if ($oauthUser->isExist()){
 			$oauthUser->loadByOpenId();
 			$user = User::newFromId($oauthUser->userId);
+			if(!$oauthUser->initialized){
+				$_SESSION['oauthUser'] = array(
+					'openId' => $oauthUser->openId,
+					'source' => $oauthUser->source,
+				);
+				$url = SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl( array('userName'=>$oauthUser->userName) );
+				header("Location: $url", true, 302);
+				return true;
+			} else {
+				// login
+				$this->_login($user);
+				$this->_loginSuccess();
+			}
 		} else {
 			// create new user
 			$user = $this->helper->generateNewUser($oauthUser->userName);
@@ -121,20 +133,18 @@ class SpecialOAuthLogin extends SpecialPage {
 				);
 				$url = SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl( array('userName'=>$oauthUser->userName) );
 				header("Location: $url", true, 302);
+				return true;
 			} 
 			// register
-			$this->_processRegister($user, $oauthUser);
 		}
-		// login
-		$this->_login($user);
-		$this->_loginSuccess();
 	}
 
-	private function _processRegister($user, $oauthUser){
+	private function _processRegister($password, $user, $oauthUser){
 		try {
 			// need to add transaction?
 			$user->addToDatabase();
-			$user->setPassword(User::randomPassword());
+			$user->setPassword($password);
+
 			// I do not know group's function
 			// $user->addGroup('oauth');
 			//$user->confirmEmail();
@@ -145,6 +155,8 @@ class SpecialOAuthLogin extends SpecialPage {
 			DeferredUpdates::addUpdate( new SiteStatsUpdate( 0, 0, 0, 0, 1 ) );
 
 			$oauthUser->userId = $user->getId();
+			$oauthUser->sourceUserName = 'test';
+			$oauthUser->initialized = '1';
 			$oauthUser->save();
 			return $user;
 
@@ -206,6 +218,7 @@ class SpecialOAuthLogin extends SpecialPage {
 		$closeScript = 'window.close();';
 		$html = '<script type="text/javascript">' . $returnScript . $closeScript . '</script>';
 		// header("Content-type: text/html; charset=utf-8"); 
+		$this->helper->cleanOAuthSession();
 		echo $html;
 	}
 
@@ -216,28 +229,47 @@ class SpecialOAuthLogin extends SpecialPage {
 			header("Location: $redirectUrl",true ,302);
 		}
 
-		$userName = (!empty($_REQUEST['userName']) ? $_REQUEST['userName'] : '');
-		if(!empty($userName)){
+		$userName = (!empty($_GET['userName']) ? $_GET['userName'] : '');
+		$password = (!empty($_POST['password']) ? $_POST['password'] : '');
+
+		$errorMsg = '';
+		if(!empty($_POST['submit'])){
+			$userName = (!empty($_POST['userName']) ? $_POST['userName'] : '');
 			$oauthUserData = $_SESSION['oauthUser'];
+
 			$oauthUserData['name'] = $userName;
 			$oauthUser = new OAuthUserModel($oauthUserData);
+
 			$user = $this->helper->generateNewUser($oauthUser->userName);
-			if($user != false && !$user instanceof Status){
-				unset($_SESSION['oauthUser']);
+
+			if($user instanceof Status){
+				$errorMsg = '用户名已存在或者含有非法字符';
+			} elseif ($user->getPasswordValidity($password) !== true) {
+				$errorMsg = $user->getPasswordValidity($password);
+				
+				if(empty($errorMsg)){
+					$errorMsg = '密码不符合要求';
+				}
+			}
+
+			if(empty($errorMsg)){
 				// register
-				$this->_processRegister($user, $oauthUser);
+				$this->_processRegister($password, $user, $oauthUser);
 				// login
 				$this->_login($user);
 				$this->_loginSuccess();
 				return true;
 			}
+			
 		}
 
 		global $wgOut;
 		require('OAuthUserRegisterTemplate.php');
 		$wgOut->setPagetitle("OAuthUser Register");
 		$template = new OAuthUserRegisterTemplate;
-		$template->set( 'userName', $oauthUser->userName );
+		$template->set( 'userName', $userName );
+		$template->set( 'password', $password );
+		$template->set( 'errorMsg', $errorMsg );
 		$wgOut->addTemplate( $template );
 	}
 }

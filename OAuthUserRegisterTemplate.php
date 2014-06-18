@@ -13,11 +13,23 @@ class OAuthUserRegisterTemplate extends BaseTemplate {
 </style>
 
 <form action="<?php SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl();?>" method="post">
-	<p>
-		用户名：<input name="userName" value="<?php echo $this->data['userName']; ?>" /> 
-		<span id="info">用户名无效，或已存在</span>
-	</p>
-	<p><button>注册</button></p>
+<table>
+	<tr>
+		<td>用户名：</td>
+		<td><input name="userName" value="<?php echo $this->data['userName']; ?>" /></td>
+	</tr>
+	<tr>
+		<td>密码：</td>
+		<td><input type="password" name="password" value="<?php echo $this->data['password']; ?>" /></td>
+	</tr>
+	<tr>
+		<td>
+			<input type="hidden" name="submit" value="1" />
+			<button>注册</button>
+		</td>
+		<td><span id="info"><?php echo $this->data['errorMsg'] ; ?></span></td>
+	</tr>
+</table>
 </form>
 
 <?php

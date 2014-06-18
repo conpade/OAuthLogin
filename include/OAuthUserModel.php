@@ -9,6 +9,9 @@ class OAuthUserModel
 	public $source;
 	public $createdTime;
 
+	public $sourceUserName;
+	public $initialized;
+
 	public function __construct($userData)
 	{
 		$this->_tableName = OAUTH_USER_TABLE;
@@ -33,6 +36,9 @@ class OAuthUserModel
 				$this->openId = $row['open_id'];
 				$this->source = $row['source'];
 				$this->createdTime = $row['created_time'];
+
+				$this->sourceUserName = $row['source_user_name'];
+				$this->initialized = $row['initialized'];
 			}
 		}
 	}
@@ -74,7 +80,6 @@ class OAuthUserModel
 			array( 'open_id' => $this->openId ),
 			__METHOD__
 		);
-
 		if ( $row = $this->getDbr()->fetchObject( $res ) ) 
 		{
 			return true;
@@ -84,11 +89,33 @@ class OAuthUserModel
 
 	public function save()
 	{
-		return $this->getDbw()->insert(
-			$this->_tableName,
-			array('user_id' => $this->userId, 'open_id' => $this->openId, 'source' => $this->source, 'created_time' => date('Y-m-d H:i:s')),
-			__METHOD__,
-			array()
-		);
+		if($this->isExist()){
+			$this->getDbw()->update( $this->_tableName,
+				array(
+					'source' => $this->source, 
+					'source_user_name' => $this->sourceUserName, 
+					'initialized' => $this->initialized
+				), 
+				array( /* WHERE */
+					'open_id' => $this->openId
+				), 
+				__METHOD__
+			);
+		} else {
+			return $this->getDbw()->insert(
+				$this->_tableName,
+				array(
+					'user_id' => $this->userId, 
+					'open_id' => $this->openId, 
+					'source' => $this->source, 
+					'created_time' => date('Y-m-d H:i:s'),
+					'source_user_name' => $this->sourceUserName, 
+					'initialized' => $this->initialized
+				),
+				__METHOD__,
+				array()
+			);
+		}
+		
 	}
 }

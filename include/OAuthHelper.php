@@ -82,8 +82,9 @@ class OAuthHelper{
 
 	public function handlerException($exception)
 	{
+		$this->cleanOAuthSession();
 		$errMsg = $exception->getMessage();
-		$redirectJs = $this->makeRedirectToReferJS();
+		$redirectJs = $this->makeCloseChildWindowJS();
 		$content = <<<CONTENT
 <!DOCTYPE html>
 <html>
@@ -98,6 +99,31 @@ class OAuthHelper{
 </html>
 CONTENT;
 		echo $content;
+	}
+
+	public function makeCloseChildWindowJS()
+	{
+		$content = <<<CONTENT
+<div id="timer"></div>
+<script type="text/javascript">
+/*<![CDATA[*/
+var time = 3;
+
+function redirect(){ 
+	window.close();
+} 
+var countTime = 3; 
+function countDown(){ 
+	document.all.timer.innerHTML = (time - countTime) + "秒后跳转"; 
+	countTime++;
+} 
+timer=setInterval('countDown()', 1000);
+timer=setTimeout('redirect()',time * 1000);
+
+/*]]>*/
+</script>
+CONTENT;
+		return $content;
 	}
 
 	public function makeRedirectToReferJS()
@@ -154,6 +180,12 @@ CONTENT;
 		}
 		$redirectUrl = $returnToTitle->getLinkURL( array(), false, $proto );
 		return $redirectUrl;
+	}
+
+	public function cleanOAuthSession(){
+		unset($_SESSION['returnTo']);
+		unset($_SESSION['oauthUser']);
+		unset($_SESSION['qqLoginState']);
 	}
 
 }

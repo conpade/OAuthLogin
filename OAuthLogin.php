@@ -55,6 +55,8 @@ $wgHooks['LoadExtensionSchemaUpdates'][] = 'efSetupOAuthLoginSchema';
 function efSetupOAuthLoginSchema( $updater ) {
 	$updater->addExtensionUpdate( array( 'addTable', OAUTH_USER_TABLE,
 		dirname(__FILE__) . '/schema/OAuthUser.sql', true ) );
+	$updater->addExtensionUpdate( array( 'modifyField', 'oauth_user','source_user_name',
+		dirname(__FILE__) . '/schema/OAuthUser.patch.initialize.sql', true ) );
 	return true;
 }
 
