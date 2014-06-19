@@ -23,7 +23,8 @@ class OAuthLoginUI {
 				$script = <<<SCRIPT
 jQuery(function(){
 	//jQuery("#pt-anonlogin, #pt-login").after('<li id="oauth_login">$link</li>');
-	jQuery("#mw-createaccount-join").after('<div id="oauth_login" style="display:block;padding:3px;margin-top:3px">$link</div>');
+	jQuery("#mw-createaccount-join,div.mw-submit").after('<div id="oauth_login" style="display:block;padding:3px;margin-top:3px">$link</div>');
+	
 	jQuery('#oauth_login').on('click', 'a', function(e){
 		e.preventDefault();
 		var link = jQuery(this).attr('href');

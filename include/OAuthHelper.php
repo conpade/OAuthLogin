@@ -112,7 +112,7 @@ var time = 3;
 function redirect(){ 
 	window.close();
 } 
-var countTime = 3; 
+var countTime = 1; 
 function countDown(){ 
 	document.all.timer.innerHTML = (time - countTime) + "秒后跳转"; 
 	countTime++;

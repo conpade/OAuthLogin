@@ -19,7 +19,7 @@ class OAuthUserModel
 			$this->openId = $userData['openId'];
 			$this->source = $userData['source'];
 			$this->sourceUserName = $userData['name'];
-		} elseif(is_numeric($userData)) {
+		} elseif(is_numeric($userData) || is_string($userData)) {
 			$this->openId = $userData;
 		}
 	}

@@ -164,14 +164,10 @@ class SpecialOAuthLogin extends SpecialPage {
 
 	/**
 	 * may have some problem
+	 * from SpecialUserlogin.php function processLogin()
 	 */
 	private function _login($user){
-		global $wgSecureLogin;
-		global $wgCookieSecure;
-		if ( $wgSecureLogin && !$this->mStickHTTPS ) {
-			$wgCookieSecure = false;
-		}
-		wfResetSessionID();
+		global $wgSecureLogin,$wgCookieSecure,$wgMemc;
 
 		$this->loginForm = new LoginForm;
 		$loginForm = $this->loginForm;
@@ -187,7 +183,27 @@ class SpecialOAuthLogin extends SpecialPage {
 		} else {
 			$user->setCookies();
 		}
+
+		// Reset the throttle
+		$request = $this->getRequest();
+		$key = wfMemcKey( 'password-throttle', $request->getIP(), md5( $user->mName ) );
+		$wgMemc->delete( $key );
+
+		/* Replace the language object to provide user interface in
+		 * correct language immediately on this first page load.
+		 */
+		$code = $request->getVal( 'uselang', $user->getOption( 'language' ) );
+		$userLang = Language::factory( $code );
+		$wgLang = $userLang;
+		$this->getContext()->setLanguage( $userLang );
+
+		// $this->renewSessionId();
+		if ( $wgSecureLogin && !$this->mStickHTTPS ) {
+			$wgCookieSecure = false;
+		}
+		wfResetSessionID();
 		
+		// $this->successfulLogin();
 		$injected_html = '';
 		wfRunHooks( 'UserLoginComplete', array( &$user, &$injected_html ) );
 		
