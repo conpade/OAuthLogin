@@ -186,6 +186,22 @@ CONTENT;
 		unset($_SESSION['returnTo']);
 		unset($_SESSION['oauthUser']);
 		unset($_SESSION['qqLoginState']);
+		unset($_SESSION['oauthLoginFirstTime']);
+	}
+
+	public function checkPassword($user,$password,$password2){
+		if($password2 !== $password)
+			return '2次输入的密码不一致';
+		if ($user->getPasswordValidity($password) !== true) {
+			$errorMsg = $user->getPasswordValidity($password);
+			
+			if(empty($errorMsg)){
+				$errorMsg = '密码不符合要求';
+			}
+			return $errorMsg;
+		} else {
+			return true;
+		}
 	}
 
 }

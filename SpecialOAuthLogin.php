@@ -103,39 +103,36 @@ class SpecialOAuthLogin extends SpecialPage {
 
 		$oauthUser = new OAuthUserModel($oauthUserData);
 
-		
 
 		// is user Existed
 		if ($oauthUser->isExist()){
 			$oauthUser->loadByOpenId();
 			$user = User::newFromId($oauthUser->userId);
-			if(!$oauthUser->initialized){
+			if(!$oauthUser->isInitialized()){
 				$_SESSION['oauthUser'] = array(
 					'openId' => $oauthUser->openId,
-					'source' => $oauthUser->source,
+					'sourceUserName' => $oauthUserData['name'],
 				);
-				$url = SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl( array('userName'=>$oauthUser->userName) );
+				$_SESSION['oauthLoginFirstTime'] = true;
+				$url = SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl();
 				header("Location: $url", true, 302);
 				return true;
 			} else {
 				// login
+				$oauthUser->sourceUserName=$oauthUserData['name'];
+				$oauthUser->save();
 				$this->_login($user);
 				$this->_loginSuccess();
 			}
 		} else {
-			// create new user
-			$user = $this->helper->generateNewUser($oauthUser->userName);
-
-			if($user === false || $user instanceof Status){
-				$_SESSION['oauthUser'] = array(
-					'openId' => $oauthUser->openId,
-					'source' => $oauthUser->source,
-				);
-				$url = SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl( array('userName'=>$oauthUser->userName) );
-				header("Location: $url", true, 302);
-				return true;
-			} 
-			// register
+			$_SESSION['oauthUser'] = array(
+				'openId' => $oauthUser->openId,
+				'source' => $oauthUser->source,
+				'sourceUserName' => $oauthUser->sourceUserName,
+			);
+			$url = SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl( array('userName'=>$oauthUser->sourceUserName) );
+			header("Location: $url", true, 302);
+			return true;
 		}
 	}
 
@@ -155,7 +152,6 @@ class SpecialOAuthLogin extends SpecialPage {
 			DeferredUpdates::addUpdate( new SiteStatsUpdate( 0, 0, 0, 0, 1 ) );
 
 			$oauthUser->userId = $user->getId();
-			$oauthUser->sourceUserName = 'test';
 			$oauthUser->initialized = '1';
 			$oauthUser->save();
 			return $user;
@@ -166,8 +162,16 @@ class SpecialOAuthLogin extends SpecialPage {
 		}
 	}
 
+	/**
+	 * may have some problem
+	 */
 	private function _login($user){
 		global $wgSecureLogin;
+		global $wgCookieSecure;
+		if ( $wgSecureLogin && !$this->mStickHTTPS ) {
+			$wgCookieSecure = false;
+		}
+		wfResetSessionID();
 
 		$this->loginForm = new LoginForm;
 		$loginForm = $this->loginForm;
@@ -183,8 +187,10 @@ class SpecialOAuthLogin extends SpecialPage {
 		} else {
 			$user->setCookies();
 		}
+		
 		$injected_html = '';
 		wfRunHooks( 'UserLoginComplete', array( &$user, &$injected_html ) );
+		
 	}
 
 	private function _loginSuccess(){
@@ -231,36 +237,57 @@ class SpecialOAuthLogin extends SpecialPage {
 
 		$userName = (!empty($_GET['userName']) ? $_GET['userName'] : '');
 		$password = (!empty($_POST['password']) ? $_POST['password'] : '');
+		$password2 = (!empty($_POST['password2']) ? $_POST['password2'] : '');
 
 		$errorMsg = '';
 		if(!empty($_POST['submit'])){
-			$userName = (!empty($_POST['userName']) ? $_POST['userName'] : '');
-			$oauthUserData = $_SESSION['oauthUser'];
+			if(empty($_SESSION['oauthLoginFirstTime'])){
+				$userName = (!empty($_POST['userName']) ? $_POST['userName'] : '');
+				$oauthUserData = $_SESSION['oauthUser'];
 
-			$oauthUserData['name'] = $userName;
-			$oauthUser = new OAuthUserModel($oauthUserData);
+				$oauthUserData['name'] = $userName;
+				$oauthUser = new OAuthUserModel($oauthUserData);
 
-			$user = $this->helper->generateNewUser($oauthUser->userName);
+				$user = $this->helper->generateNewUser($oauthUser->sourceUserName);
 
-			if($user instanceof Status){
-				$errorMsg = '用户名已存在或者含有非法字符';
-			} elseif ($user->getPasswordValidity($password) !== true) {
-				$errorMsg = $user->getPasswordValidity($password);
-				
+				if($user instanceof Status){
+					$errorMsg = '用户名已存在或者含有非法字符';
+				} else {
+					$res = $this->helper->checkPassword($user,$password,$password2);
+					if($res !== true)
+						$errorMsg = $res;
+				}
 				if(empty($errorMsg)){
-					$errorMsg = '密码不符合要求';
+					// register
+					$this->_processRegister($password, $user, $oauthUser);
+					// login
+					$this->_login($user);
+					$this->_loginSuccess();
+					return true;
+				}
+			} else { // not first time
+				$oauthUserData = $_SESSION['oauthUser'];
+				$oauthUser = new OAuthUserModel($oauthUserData['openId']);
+				$oauthUser->loadByOpenId();
+				$user = User::newFromId($oauthUser->userId);
+				$user->loadFromId();
+				$res = $this->helper->checkPassword($user,$password,$password2);
+				if($res !== true)
+					$errorMsg = $res;
+
+				if(empty($errorMsg)){
+					// update user
+					$user->setPassword($password);
+					$user->saveSettings();
+					$oauthUser->sourceUserName=$oauthUserData['sourceUserName'];
+					$oauthUser->initialized=1;
+					$oauthUser->save();
+					// login
+					$this->_login($user);
+					$this->_loginSuccess();
+					return true;
 				}
 			}
-
-			if(empty($errorMsg)){
-				// register
-				$this->_processRegister($password, $user, $oauthUser);
-				// login
-				$this->_login($user);
-				$this->_loginSuccess();
-				return true;
-			}
-			
 		}
 
 		global $wgOut;

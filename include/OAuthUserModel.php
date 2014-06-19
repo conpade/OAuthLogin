@@ -5,20 +5,23 @@ class OAuthUserModel
 
 	public $openId;
 	public $userId;
-	public $userName;
 	public $source;
 	public $createdTime;
+	public $lastUpdatedTime;
 
 	public $sourceUserName;
 	public $initialized;
 
-	public function __construct($userData)
+	public function __construct($userData = null)
 	{
 		$this->_tableName = OAUTH_USER_TABLE;
-
-		$this->openId = $userData['openId'];
-		$this->source = $userData['source'];
-		$this->userName = $userData['name'];
+		if(is_array($userData)){
+			$this->openId = $userData['openId'];
+			$this->source = $userData['source'];
+			$this->sourceUserName = $userData['name'];
+		} elseif(is_numeric($userData)) {
+			$this->openId = $userData;
+		}
 	}
 
 	public function load()
@@ -27,18 +30,18 @@ class OAuthUserModel
 		{
 			$res = $this->getDbr()->select(
 				$this->_tableName, 
-				array('open_id','source','created_time'),
+				array('open_id','source','created_time','source_user_name','initialized'),
 				array( 'user_id' => $this->userId ),
 				__METHOD__
 			);
 			if ( $row = $this->getDbr()->fetchObject( $res ) ) 
 			{
-				$this->openId = $row['open_id'];
-				$this->source = $row['source'];
-				$this->createdTime = $row['created_time'];
+				$this->openId = $row->open_id;
+				$this->source = $row->source;
+				$this->createdTime = $row->created_time;
 
-				$this->sourceUserName = $row['source_user_name'];
-				$this->initialized = $row['initialized'];
+				$this->sourceUserName = $row->source_user_name;
+				$this->initialized = $row->initialized;
 			}
 		}
 	}
@@ -49,7 +52,7 @@ class OAuthUserModel
 		{
 			$res = $this->getDbr()->select(
 				$this->_tableName, 
-				array('user_id','source','created_time'),
+				array('user_id','source','created_time','source_user_name','initialized'),
 				array( 'open_id' => $this->openId ),
 				__METHOD__
 			);
@@ -58,6 +61,9 @@ class OAuthUserModel
 				$this->userId = $row->user_id;
 				$this->source = $row->source;
 				$this->createdTime = $row->created_time;
+
+				$this->sourceUserName = $row->source_user_name;
+				$this->initialized = $row->initialized;
 			}
 		}
 	}
@@ -82,7 +88,23 @@ class OAuthUserModel
 		);
 		if ( $row = $this->getDbr()->fetchObject( $res ) ) 
 		{
-			return true;
+			return $row->user_id;
+		}
+		return false;
+	}
+
+	public function isInitialized()
+	{
+		$res = $this->getDbr()->select(
+			$this->_tableName, 
+			'initialized',
+			array( 'open_id' => $this->openId ),
+			__METHOD__
+		);
+		if ( $row = $this->getDbr()->fetchObject( $res ) ) 
+		{
+			$this->initialized = $row->initialized;
+			return $this->initialized;
 		}
 		return false;
 	}
@@ -92,9 +114,9 @@ class OAuthUserModel
 		if($this->isExist()){
 			$this->getDbw()->update( $this->_tableName,
 				array(
-					'source' => $this->source, 
 					'source_user_name' => $this->sourceUserName, 
-					'initialized' => $this->initialized
+					'last_updated_time' => date('Y-m-d H:i:s'),
+					'initialized' => $this->initialized,
 				), 
 				array( /* WHERE */
 					'open_id' => $this->openId
@@ -109,6 +131,7 @@ class OAuthUserModel
 					'open_id' => $this->openId, 
 					'source' => $this->source, 
 					'created_time' => date('Y-m-d H:i:s'),
+					'last_updated_time' => date('Y-m-d H:i:s'),
 					'source_user_name' => $this->sourceUserName, 
 					'initialized' => $this->initialized
 				),

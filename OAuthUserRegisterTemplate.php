@@ -14,13 +14,19 @@ class OAuthUserRegisterTemplate extends BaseTemplate {
 
 <form action="<?php SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl();?>" method="post">
 <table>
+	<?php if(empty($_SESSION['oauthLoginFirstTime'])): ?>
 	<tr>
 		<td>用户名：</td>
 		<td><input name="userName" value="<?php echo $this->data['userName']; ?>" /></td>
 	</tr>
+	<?php endif; ?>
 	<tr>
 		<td>密码：</td>
-		<td><input type="password" name="password" value="<?php echo $this->data['password']; ?>" /></td>
+		<td><input type="password" name="password" value="" /></td>
+	</tr>
+	<tr>
+		<td>再次输入密码：</td>
+		<td><input type="password" name="password2" value="" /></td>
 	</tr>
 	<tr>
 		<td>
