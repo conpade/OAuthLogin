@@ -24,8 +24,12 @@ class OAuthUserModel
 		}
 	}
 
-	public function load()
+	public function load($userId = 0)
 	{
+		$userId = intval($userId);
+		if($userId > 0){
+			$this->userId = $userId;
+		}
 		if(!empty($this->userId))
 		{
 			$res = $this->getDbr()->select(
@@ -139,6 +143,11 @@ class OAuthUserModel
 				array()
 			);
 		}
-		
+	}
+
+	public static function getSourceUserName($userId){
+		$oauthUser = new OAuthUserModel();
+		$oauthUser->load($userId);
+		return $oauthUser->sourceUserName;
 	}
 }
