@@ -136,7 +136,7 @@ class SpecialOAuthLogin extends SpecialPage {
 		}
 	}
 
-	private function _processRegister($password, $user, $oauthUser){
+	private function _processRegister($password, $email, $user, $oauthUser){
 		try {
 			// need to add transaction?
 			$user->addToDatabase();
@@ -147,6 +147,11 @@ class SpecialOAuthLogin extends SpecialPage {
 			//$user->confirmEmail();
 			$user->setToken();
 			$user->saveSettings();
+
+			// email
+			$user->setEmail($email);
+			$user->saveSettings();
+			$user->sendConfirmationMail();
 
 			// add user count
 			DeferredUpdates::addUpdate( new SiteStatsUpdate( 0, 0, 0, 0, 1 ) );
@@ -254,6 +259,7 @@ class SpecialOAuthLogin extends SpecialPage {
 		$userName = (!empty($_GET['userName']) ? $_GET['userName'] : '');
 		$password = (!empty($_POST['password']) ? $_POST['password'] : '');
 		$password2 = (!empty($_POST['password2']) ? $_POST['password2'] : '');
+		$email = (!empty($_POST['email']) ? $_POST['email'] : '');
 
 		$errorMsg = '';
 		if(!empty($_POST['submit'])){
@@ -263,19 +269,13 @@ class SpecialOAuthLogin extends SpecialPage {
 
 				$oauthUserData['name'] = $userName;
 				$oauthUser = new OAuthUserModel($oauthUserData);
-
 				$user = $this->helper->generateNewUser($oauthUser->sourceUserName);
 
-				if($user instanceof Status){
-					$errorMsg = '用户名已存在或者含有非法字符';
-				} else {
-					$res = $this->helper->checkPassword($user,$password,$password2);
-					if($res !== true)
-						$errorMsg = $res;
-				}
-				if(empty($errorMsg)){
+				$errorMsg = $this->helper->checkFirstTimeOAuthLogin($user,$password,$password2,$email);
+
+				if($errorMsg==='success'){
 					// register
-					$this->_processRegister($password, $user, $oauthUser);
+					$this->_processRegister($password, $email, $user, $oauthUser);
 					// login
 					$this->_login($user);
 					$this->_loginSuccess();
@@ -287,14 +287,19 @@ class SpecialOAuthLogin extends SpecialPage {
 				$oauthUser->loadByOpenId();
 				$user = User::newFromId($oauthUser->userId);
 				$user->loadFromId();
-				$res = $this->helper->checkPassword($user,$password,$password2);
-				if($res !== true)
-					$errorMsg = $res;
 
-				if(empty($errorMsg)){
+				$errorMsg = $this->helper->checkNotFirstTimeOAuthLogin($user,$password,$password2,$email);
+
+				if($errorMsg==='success'){
 					// update user
 					$user->setPassword($password);
 					$user->saveSettings();
+
+					// email
+					$user->setEmail($email);
+					$user->saveSettings();
+					$user->sendConfirmationMail();
+
 					$oauthUser->sourceUserName=$oauthUserData['sourceUserName'];
 					$oauthUser->initialized=1;
 					$oauthUser->save();
@@ -312,7 +317,11 @@ class SpecialOAuthLogin extends SpecialPage {
 		$template = new OAuthUserRegisterTemplate;
 		$template->set( 'userName', $userName );
 		$template->set( 'password', $password );
+		$template->set( 'email', $email );
 		$template->set( 'errorMsg', $errorMsg );
+
+		wfRunHooks( 'UserCreateForm', array( &$template ) );
+
 		$wgOut->addTemplate( $template );
 	}
 }

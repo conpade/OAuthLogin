@@ -204,4 +204,69 @@ CONTENT;
 		}
 	}
 
+	public function checkEmail($email){
+		global $wgEmailAuthentication;
+		if ( $wgEmailAuthentication && Sanitizer::validateEmail( $email ) ) {
+			return true;
+		}
+		return '邮件格式不正确';
+		// $error = new RawMessage( '' );
+		// return $abortError->text();
+	}
+
+	public function checkFirstTimeOAuthLogin($user,$password,$password2,$email){
+		if($user instanceof Status){
+			$errorMsg = '用户名已存在或者含有非法字符';
+			return $errorMsg;
+		} else {
+			$msg = $this->checkPassword($user,$password,$password2);
+			if($msg !== true){
+				return $msg;
+			}
+		}
+
+		$msg = $this->checkEmail($email);
+		if($msg !== true){
+			return $msg;
+		}
+
+		$msg = $this->checkCaptcha($user);
+		if($msg !== true){
+			return $msg;
+		}
+
+		return 'success';
+	}
+
+	public function checkNotFirstTimeOAuthLogin($user,$password,$password2,$email){
+		$msg = $this->checkPassword($user,$password,$password2);
+		if($msg !== true){
+			$errorMsg = $msg;
+			return $errorMsg;
+		}
+
+		$msg = $this->checkEmail($email);
+		if($msg !== true){
+			return $msg;
+		}
+
+		$msg = $this->checkCaptcha($user);
+		if($msg !== true){
+			return $msg;
+		}
+
+		return 'success';
+	}
+
+	public function checkCaptcha($u){
+		$abortError = '';
+		if ( !wfRunHooks( 'AbortNewAccount', array( $u, &$abortError ) ) ) {
+			// Hook point to add extra creation throttles and blocks
+			wfDebug( "LoginForm::addNewAccountInternal: a hook blocked creation\n" );
+			$abortError = new RawMessage( $abortError );
+			return $abortError->text();
+		}
+		return true;
+	}
+
 }
