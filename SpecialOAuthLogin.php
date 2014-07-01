@@ -319,6 +319,7 @@ class SpecialOAuthLogin extends SpecialPage {
 		$template->set( 'password', $password );
 		$template->set( 'email', $email );
 		$template->set( 'errorMsg', $errorMsg );
+		$template->set( 'header', '' );
 
 		wfRunHooks( 'UserCreateForm', array( &$template ) );
 

@@ -14,6 +14,10 @@ class OAuthUserRegisterTemplate extends BaseTemplate {
 
 <form action="<?php SpecialPage::getTitleFor( 'OAuthLogin', 'register' )->getLinkUrl();?>" method="post">
 <table>
+	<section>
+		请完善您的账户信息
+	</section>
+
 	<section class="mw-form-header">
 		<?php $this->html( 'header' ); /* extensions such as ConfirmEdit add form HTML here */ ?>
 	</section>
