@@ -56,15 +56,15 @@ class OAuthHelper{
 		}
 	}
 
-	public function setSessionValue($name,$value){
+	public function setSessionData($name,$value){
 		$this->getRequest()->setSessionData( $name, $value );
 	}
 
-	public function getSessionValue($name){
+	public function getSessionData($name){
 		return $this->getRequest()->getSessionData( $name );
 	}
 
-	public function clearSessionValue($name){
+	public function clearSessionData($name){
 		$this->getRequest()->setSessionData( $name, null );
 	}
 
