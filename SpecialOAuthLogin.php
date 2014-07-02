@@ -85,7 +85,10 @@ class SpecialOAuthLogin extends SpecialPage {
 		if($source == 'qq'){
 			$state = !empty($_GET['state']) ? $_GET['state'] : '';
 			$ourState = $this->helper->getSessionData('qqLoginState');
+
 			if((string)$ourState !== (string)$state){
+				var_dump($ourState);
+				var_dump($state)
 				throw new OAuthException('Csrf attack');
 			}
 			$this->helper->clearSessionData('qqLoginState');
