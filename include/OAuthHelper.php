@@ -15,9 +15,19 @@ class OAuthException extends Exception{
 class OAuthHelper{
 	const OAUTH_SESSION_KEY='OAuthSession';
 	public $controller;
+	private $request;
 
 	public function __construct($controller){
 		$this->controller = $controller;
+	}
+
+	public function getRequest(){
+		if(!empty($this->request))
+			return $this->request;
+
+		global $wgRequest;
+		$this->request=$wgRequest;
+		return $this->request;
 	}
 
 	public function getSource(){
@@ -46,23 +56,16 @@ class OAuthHelper{
 		}
 	}
 
-	public function setSessionValue($key,$value){
-		$_SESSION[self::OAUTH_SESSION_KEY][$key]=$value;
+	public function setSessionValue($name,$value){
+		$this->getRequest()->setSessionData( $name, $value );
 	}
 
-	public function getSessionValue($key){
-		if(isset($_SESSION[self::OAUTH_SESSION_KEY][$key]))
-			return $_SESSION[self::OAUTH_SESSION_KEY][$key];
-		return null;
+	public function getSessionValue($name){
+		return $this->getRequest()->getSessionData( $name );
 	}
 
-	public function clearSessionValue($key){
-		if(isset($_SESSION[self::OAUTH_SESSION_KEY][$key])){
-			unset($_SESSION[self::OAUTH_SESSION_KEY][$key]);
-			return true;
-		}else{
-			return false;
-		}
+	public function clearSessionValue($name){
+		$this->getRequest()->setSessionData( $name, null );
 	}
 
 	/**
