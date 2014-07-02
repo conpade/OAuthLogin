@@ -13,6 +13,7 @@ class OAuthException extends Exception{
  * @author Francis Conpade
  */
 class OAuthHelper{
+	const OAUTH_SESSION_KEY='OAuthSession';
 	public $controller;
 
 	public function __construct($controller){
@@ -42,6 +43,25 @@ class OAuthHelper{
 	public function setupSession(){
 		if (session_id() == '') {
 			wfSetupSession();
+		}
+	}
+
+	public function setSessionValue($key,$value){
+		$_SESSION[self::OAUTH_SESSION_KEY][$key]=$value;
+	}
+
+	public function getSessionValue($key){
+		if(isset($_SESSION[self::OAUTH_SESSION_KEY][$key]))
+			return $_SESSION[self::OAUTH_SESSION_KEY][$key];
+		return null;
+	}
+
+	public function clearSessionValue($key){
+		if(isset($_SESSION[self::OAUTH_SESSION_KEY][$key])){
+			unset($_SESSION[self::OAUTH_SESSION_KEY][$key]);
+			return true;
+		}else{
+			return false;
 		}
 	}
 

@@ -58,12 +58,14 @@ class SpecialOAuthLogin extends SpecialPage {
 			$this->helper->defaultRedirect();
 
 		// set return to
-		$_SESSION['returnTo'] = $_GET['returnto'];
+		$returnTo = !empty($_GET['returnto']) ? $_GET['returnto'] : '';
+		$this->helper->setSessionValue('returnTo',$returnTo);
+
 		$source = $this->helper->getSource();
 		$oauth = $this->helper->getOAuthObj($source);
 		if($source == 'qq'){
 			$state = md5(microtime(true) . $this->helper->createRandomString(8));
-			$_SESSION['qqLoginState'] = $state;
+			$this->helper->setSessionValue('qqLoginState',$state);
 			$oauth->setState($state);
 		}
 		$redirectUrl = $oauth->getRedirectUrl();
@@ -82,11 +84,11 @@ class SpecialOAuthLogin extends SpecialPage {
 		// anti-csrf (only qq)
 		if($source == 'qq'){
 			$state = !empty($_GET['state']) ? $_GET['state'] : '';
-			$ourState = !empty($_SESSION['qqLoginState']) ? $_SESSION['qqLoginState'] : '';
-			unset($_SESSION['qqLoginState']);
-			if($ourState !== $state){
+			$ourState = $this->helper->getSessionValue('qqLoginState');
+			if((string)$ourState !== (string)$state){
 				throw new OAuthException('Csrf attack');
 			}
+			$this->helper->clearSessionValue('qqLoginState');
 		}
 
 		$authCode = $_GET['code'];
@@ -218,11 +220,11 @@ class SpecialOAuthLogin extends SpecialPage {
 		global $wgRedirectOnLogin, $wgSecureLogin;
 		$loginForm = $this->loginForm;
 
-		if( empty($_SESSION['returnTo']) ){  // if return to is empty , reload
+		$returnTo = $this->helper->getSessionValue('returnTo');
+		if( empty($returnTo) ){  // if return to is empty , reload
 			$returnScript = 'window.opener.location.reload();';
 		}
 		else{
-			$returnTo = $_SESSION['returnTo'];
 			$returnToTitle = Title::newFromText( $returnTo );
 			if ( !$returnToTitle ) {
 				$returnToTitle = Title::newMainPage();
