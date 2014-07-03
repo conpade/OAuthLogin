@@ -33,7 +33,6 @@ class SpecialOAuthLogin extends SpecialPage {
 			$this->helper->handlerException($e);
 			die();
 		}
-		
 	}
 
 	// info page
@@ -69,7 +68,6 @@ class SpecialOAuthLogin extends SpecialPage {
 			$oauth->setState($state);
 		}
 		$redirectUrl = $oauth->getRedirectUrl();
-		
 		header("Location: $redirectUrl",true ,302);
 	}
 
@@ -78,7 +76,6 @@ class SpecialOAuthLogin extends SpecialPage {
 		// do not allow login when user is already logged in
 		if($this->helper->isUserLoggedIn())
 			$this->helper->defaultRedirect();
-
 		$source = $this->helper->getSource();
 
 		// anti-csrf (only qq)
@@ -87,8 +84,6 @@ class SpecialOAuthLogin extends SpecialPage {
 			$ourState = $this->helper->getSessionData('qqLoginState');
 
 			if((string)$ourState !== (string)$state){
-				var_dump($ourState);
-				var_dump($state)
 				throw new OAuthException('Csrf attack');
 			}
 			$this->helper->clearSessionData('qqLoginState');

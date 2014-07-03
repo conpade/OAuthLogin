@@ -51,7 +51,7 @@ class OAuthHelper{
 	}
 
 	public function setupSession(){
-		if (session_id() == '') {
+		if ( session_id() == '' ) {
 			wfSetupSession();
 		}
 	}
