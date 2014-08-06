@@ -4,8 +4,8 @@ class OAuthLoginUI {
 	/**
 	 * Add a sign in with Twitter button but only when a user is not logged in
 	 */
-	public function efAddLoginButton( &$out, &$skin ) {
-		global $wgUser, $wgExtensionAssetsPath, $wgScriptPath, $wgEnabledOAuthLoginList, $wgOauthSourceList;
+	public function efAddLoginButton( &$template ) {
+		global $wgUser, $wgExtensionAssetsPath, $wgEnabledOAuthLoginList, $wgOauthSourceList;
 	
 		if ( !$wgUser->isLoggedIn() ) {
 			if(!empty($wgEnabledOAuthLoginList)){
@@ -23,20 +23,18 @@ class OAuthLoginUI {
 				$script = <<<SCRIPT
 jQuery(function(){
 	//jQuery("#pt-anonlogin, #pt-login").after('<li id="oauth_login">$link</li>');
-	if(jQuery("#mw-createaccount-join,div.mw-submit").count>0){
-		jQuery("#mw-createaccount-join,div.mw-submit").after('<div id="oauth_login" style="display:block;padding:3px;margin-top:3px">$link</div>');
-
-		jQuery('#oauth_login').on('click', 'a', function(e){
-			e.preventDefault();
-			var link = jQuery(this).attr('href');
-			var width = 680;
-			var w = window.open(link, 'a', "width=" + width + ",height=500,menubar=0,scrollbars=1,resizable=1,status=1,titlebar=0,toolbar=0,location=1");
-			w.focus();
-		});
-	}
+	jQuery("#mw-createaccount-join,div.mw-submit").after('<div id="oauth_login" style="display:block;padding:3px;margin-top:3px">$link</div>');
+	
+	jQuery('#oauth_login').on('click', 'a', function(e){
+		e.preventDefault();
+		var link = jQuery(this).attr('href');
+		var width = 680;
+		var w = window.open(link, 'a', "width=" + width + ",height=500,menubar=0,scrollbars=1,resizable=1,status=1,titlebar=0,toolbar=0,location=1");
+		w.focus();
+	});
 });
 SCRIPT;
-				$out->addInlineScript($script);
+				$template->getSkin()->getContext()->getOutput()->addInlineScript($script);
 			}
 		}
 		return true;

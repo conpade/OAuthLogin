@@ -64,4 +64,8 @@ function efSetupOAuthLoginSchema( $updater ) {
 
 // hooks
 $olb = new OAuthLoginUI;
-$wgHooks['BeforePageDisplay'][] = array( $olb, 'efAddLoginButton' );
+
+// $wgHooks['BeforePageDisplay'][] = array( $olb, 'efAddLoginButton' );
+
+$wgHooks['UserLoginForm'][] = array( $olb, 'efAddLoginButton' );
+$wgHooks['UserCreateForm'][] = array( $olb, 'efAddLoginButton' );
